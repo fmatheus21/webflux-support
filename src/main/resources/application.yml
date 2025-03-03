@@ -1,0 +1,15 @@
+server:
+  port: 9000
+spring:
+  webflux:
+    base-path: ${CONTEXT_PATH:/api/v1}
+  application:
+    name: webflux-support
+  flyway:
+    url: jdbc:postgresql://localhost:5432/webflux-support
+    user: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/webflux-support
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
