@@ -34,12 +34,12 @@ public class ServiceQueue {
     @Column("problem_description")
     private String problemDescription;
 
-    @NotNull
     @Column("id_attendant")
-    private Attendant attendant;
+    private UUID idAttendant;
 
     @NotNull
     @Column("id_customer")
-    private Customer customer;
+    private UUID idCustomer;
+
 
 }

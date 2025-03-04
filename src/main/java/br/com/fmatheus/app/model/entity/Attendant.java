@@ -27,7 +27,7 @@ public class Attendant {
 
     @NotNull
     @Column("id_person")
-    private Person person;
+    private Integer idPerson;
 
-    
+
 }
