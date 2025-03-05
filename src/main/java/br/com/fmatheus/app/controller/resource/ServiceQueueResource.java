@@ -38,7 +38,7 @@ public class ServiceQueueResource {
 
     @ResponseStatus(HttpStatus.OK)
     @GetMapping(value = "/position-queue/{uuid}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServiceQueueResponse> positionQueue(@PathVariable UUID uuid) {
+    public Mono<ServiceQueueResponse> positionQueue(@PathVariable UUID uuid) {
         return this.facade.positionQueue(uuid);
     }
 

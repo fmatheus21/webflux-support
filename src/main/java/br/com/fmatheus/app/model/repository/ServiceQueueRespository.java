@@ -13,7 +13,7 @@ public interface ServiceQueueRespository extends ReactiveCrudRepository<ServiceQ
 
     Flux<ServiceQueue> findAllByOrderByCreationDateAsc();
 
-    Flux<ServiceQueue> findByIdAttendantIsNullOrderByCreationDateAsc();
+    Flux<ServiceQueue> findByIdAttendantIsNullAndStatusOrderByCreationDateAsc(String status);
 
     Flux<ServiceQueue> findByStatusOrderByCreationDateAsc(String status);
 

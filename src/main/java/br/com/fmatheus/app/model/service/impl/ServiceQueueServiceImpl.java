@@ -45,8 +45,8 @@ public class ServiceQueueServiceImpl implements ServiceQueueService {
     }
 
     @Override
-    public Flux<ServiceQueue> findByIdAttendantIsNullOrderByCreationDateAsc() {
-        return this.respository.findByIdAttendantIsNullOrderByCreationDateAsc();
+    public Flux<ServiceQueue> findByIdAttendantIsNullAndStatusOrderByCreationDateAsc(StatusQueueEnum status) {
+        return this.respository.findByIdAttendantIsNullAndStatusOrderByCreationDateAsc(status.getStatus());
     }
 
     @Override

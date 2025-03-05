@@ -11,7 +11,7 @@ public interface ServiceQueueService extends GenericService<ServiceQueue, UUID> 
 
     Flux<ServiceQueue> findAllByOrderByCreationDateAsc();
 
-    Flux<ServiceQueue> findByIdAttendantIsNullOrderByCreationDateAsc();
+    Flux<ServiceQueue> findByIdAttendantIsNullAndStatusOrderByCreationDateAsc(StatusQueueEnum status);
 
     Flux<ServiceQueue> findByStatusOrderByCreationDateAsc(StatusQueueEnum status);
 
