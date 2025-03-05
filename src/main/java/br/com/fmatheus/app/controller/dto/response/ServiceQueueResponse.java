@@ -20,6 +20,7 @@ public class ServiceQueueResponse {
     private String title;
     private String problemDescription;
     private Integer positionQueue;
+    private String status;
     private CustomerResponse customer;
 
     @Builder

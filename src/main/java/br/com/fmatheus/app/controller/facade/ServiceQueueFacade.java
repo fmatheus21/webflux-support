@@ -1,12 +1,15 @@
 package br.com.fmatheus.app.controller.facade;
 
 import br.com.fmatheus.app.controller.converter.ServiceQueueConverter;
+import br.com.fmatheus.app.controller.dto.request.ServeNextQueueRequest;
 import br.com.fmatheus.app.controller.dto.request.ServiceQueueRequest;
 import br.com.fmatheus.app.controller.dto.response.ServiceQueueResponse;
+import br.com.fmatheus.app.controller.enumerable.StatusQueueEnum;
 import br.com.fmatheus.app.model.entity.ServiceQueue;
 import br.com.fmatheus.app.model.service.CustomerService;
 import br.com.fmatheus.app.model.service.PersonService;
 import br.com.fmatheus.app.model.service.ServiceQueueService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -29,6 +32,8 @@ import java.util.UUID;
  * <p>
  * Esse Sink é útil para streaming de eventos em tempo real, como notificações ou atualizações contínuas.
  */
+
+@Slf4j
 @Component
 public class ServiceQueueFacade {
 
@@ -61,8 +66,9 @@ public class ServiceQueueFacade {
      * @return Um {@link Flux} contendo os {@link ServiceQueueResponse} com as informações dos registros da fila de serviço.
      * Os dados são emitidos com um atraso de 5 segundos entre os elementos, e também inclui as emissões do {@code serviceQueueResponseSinks}.
      */
-    public Flux<ServiceQueueResponse> listQueue() {
-        var result = this.serviceQueueService.findAllByOrderByCreationDateAsc()
+    public Flux<ServiceQueueResponse> listQueue(StatusQueueEnum status) {
+        log.info("Listando a fila de atendimento pelo status [{}]", status.getStatus());
+        var result = this.serviceQueueService.findByStatusOrderByCreationDateAsc(status)
                 .flatMap(serviceQueue -> this.customerService.findById(serviceQueue.getIdCustomer())
                         .flatMap(customer -> this.personService.findById(customer.getIdPerson())
                                 .map(person -> this.serviceQueueConverter.converterToResponse(serviceQueue, customer, person))
@@ -86,7 +92,8 @@ public class ServiceQueueFacade {
      * @return Um {@link Mono} contendo a resposta {@link ServiceQueueResponse} com os dados completos do serviço criado.
      */
     public Mono<ServiceQueueResponse> create(ServiceQueueRequest request) {
-        var converter = this.serviceQueueConverter.converterToEntity(request);
+        log.info("Criando novo registro de Suporte.");
+        var converter = this.serviceQueueConverter.converterToEntity(request, StatusQueueEnum.AGUARDANDO_ATENDIMENTO);
         var commit = this.serviceQueueService.save(converter)
                 .flatMap(serviceQueue -> this.customerService.findById(serviceQueue.getIdCustomer())
                         .flatMap(customer -> this.personService.findById(customer.getIdPerson())
@@ -111,16 +118,19 @@ public class ServiceQueueFacade {
      * @return Um {@link Mono} contendo {@link ServiceQueueResponse} com as informações do serviço
      * e a posição na fila. Se o registro não for encontrado, retorna um Mono vazio.
      */
-    public Mono<ServiceQueueResponse> positionQueue(UUID id) {
+    public Flux<ServiceQueueResponse> positionQueue(UUID id) {
+        log.info("Obtendo a posicao do cliente de id {}", id);
         // Consulta a posição na fila
-        Mono<Integer> positionMono = this.serviceQueueService.findAllByOrderByCreationDateAsc()
+        Mono<Integer> positionMono = this.serviceQueueService.findByIdAttendantIsNullOrderByCreationDateAsc()
                 .index() // Associa um índice a cada item (posição começa em 0)
                 .filter(tuple -> tuple.getT2().getId().equals(id)) // Filtra pelo ID
                 .map(tuple -> tuple.getT1().intValue() + 1) // Soma 1 para posição começar em 1
                 .singleOrEmpty(); // Retorna o primeiro encontrado ou vazio
 
+        log.info("Posicao do cliente: {}", positionMono.map(Integer::intValue));
+
         // Consulta as informações do registro e inclui a posição
-        return positionMono.flatMap(position ->
+        var result = positionMono.flatMap(position ->
                 this.serviceQueueService.findById(id)
                         .flatMap(serviceQueue -> this.customerService.findById(serviceQueue.getIdCustomer())
                                 .flatMap(customer -> this.personService.findById(customer.getIdPerson())
@@ -128,6 +138,21 @@ public class ServiceQueueFacade {
                                 )
                         )
         );
+
+        return Flux.merge(result, serviceQueueResponseSinks.asFlux()).delayElements(Duration.ofSeconds(5));
     }
 
+    public Mono<ServiceQueueResponse> serveNextQueue(ServeNextQueueRequest request) {
+        log.info("Iniciando atendimento ao proximo da fila.");
+        var result = this.serviceQueueService.findFirstByStatusOrderByCreationDateAsc(StatusQueueEnum.AGUARDANDO_ATENDIMENTO.getStatus())
+                .map(serviceQueue -> this.serviceQueueConverter.converterToEntityServeNextQueue(serviceQueue, request));
+
+        var commit = result.flatMap(this.serviceQueueService::save)
+                .flatMap(serviceQueue -> this.customerService.findById(serviceQueue.getIdCustomer())
+                        .flatMap(customer -> this.personService.findById(customer.getIdPerson())
+                                .map(person -> this.serviceQueueConverter.converterToResponse(serviceQueue, customer, person))
+                        ));
+        return commit.doOnSuccess(this.serviceQueueResponseSinks::tryEmitNext);
+
+    }
 }

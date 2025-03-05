@@ -34,6 +34,10 @@ public class ServiceQueue {
     @Column("problem_description")
     private String problemDescription;
 
+    @NotBlank
+    @Column("status")
+    private String status;
+
     @Column("id_attendant")
     private UUID idAttendant;
 

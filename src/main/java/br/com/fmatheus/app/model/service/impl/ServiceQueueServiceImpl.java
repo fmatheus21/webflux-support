@@ -1,5 +1,6 @@
 package br.com.fmatheus.app.model.service.impl;
 
+import br.com.fmatheus.app.controller.enumerable.StatusQueueEnum;
 import br.com.fmatheus.app.model.entity.ServiceQueue;
 import br.com.fmatheus.app.model.repository.ServiceQueueRespository;
 import br.com.fmatheus.app.model.service.ServiceQueueService;
@@ -41,5 +42,20 @@ public class ServiceQueueServiceImpl implements ServiceQueueService {
     @Override
     public Flux<ServiceQueue> findAllByOrderByCreationDateAsc() {
         return this.respository.findAllByOrderByCreationDateAsc();
+    }
+
+    @Override
+    public Flux<ServiceQueue> findByIdAttendantIsNullOrderByCreationDateAsc() {
+        return this.respository.findByIdAttendantIsNullOrderByCreationDateAsc();
+    }
+
+    @Override
+    public Flux<ServiceQueue> findByStatusOrderByCreationDateAsc(StatusQueueEnum status) {
+        return this.respository.findByStatusOrderByCreationDateAsc(status.getStatus());
+    }
+
+    @Override
+    public Mono<ServiceQueue> findFirstByStatusOrderByCreationDateAsc(String status) {
+        return this.respository.findFirstByStatusOrderByCreationDateAsc(status);
     }
 }
