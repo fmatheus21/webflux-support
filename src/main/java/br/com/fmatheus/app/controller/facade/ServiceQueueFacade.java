@@ -20,12 +20,18 @@ import java.util.UUID;
 
 
 /**
+ * Classe responsável por orquestrar a lógica de atendimento da fila de serviços.
+ * Fornece métodos para listar, criar e atualizar registros na fila.
+ *
+ * <p>
  * {@code O que faz Sinks.many().multicast().onBackpressureBuffer()?}
  * Cria um Sink do tipo {@link Sinks.Many} que permite a emissão de múltiplos eventos
  * para múltiplos assinantes (subscribers) simultaneamente.
+ * </p>
  * <p>
  * A configuração {@code multicast()} garante que apenas os assinantes conectados no momento
  * da emissão receberão os eventos. Novos assinantes não receberão eventos anteriores à sua conexão.
+ * </p>
  * <p>
  * A estratégia {@code onBackpressureBuffer()} permite que os eventos sejam armazenados em um buffer
  * caso os assinantes não consigam consumi-los na mesma velocidade em que são emitidos, prevenindo perda de dados.
@@ -43,6 +49,14 @@ public class ServiceQueueFacade {
     private final ServiceQueueConverter serviceQueueConverter;
     private final Sinks.Many<ServiceQueueResponse> serviceQueueResponseSinks;
 
+    /**
+     * Construtor da classe que inicializa os serviços necessários.
+     *
+     * @param serviceQueueService   Serviço responsável por manipular a fila.
+     * @param customerService       Serviço responsável pelos clientes.
+     * @param personService         Serviço responsável pelos dados da pessoa.
+     * @param serviceQueueConverter Conversor de entidade para DTO.
+     */
     public ServiceQueueFacade(ServiceQueueService serviceQueueService, CustomerService customerService, PersonService personService, ServiceQueueConverter serviceQueueConverter) {
         this.serviceQueueService = serviceQueueService;
         this.customerService = customerService;
@@ -53,16 +67,17 @@ public class ServiceQueueFacade {
 
 
     /**
-     * Retorna uma lista de registros da fila de serviço com informações completas de cada registro.
+     * Lista os registros da fila de atendimento com um determinado status.
+     * A resposta é emitida com um delay de 5 segundos para sincronização.
      *
      * <p>Este método realiza as seguintes operações:</p>
      * <ul>
-     *     <li>Obtém todos os registros da fila de serviço ordenados pela data de criação.</li>
-     *     <li>Para cada registro, busca as informações associadas ao cliente e à pessoa responsável.</li>
-     *     <li>Converte cada registro para um {@link ServiceQueueResponse} contendo todos os dados necessários.</li>
+     *     <li>Obtém todos os registros da fila de serviço baseados no status fornecido e ordenados pela data de criação.</li>
+     *     <li>Para cada registro, busca as informações associadas ao cliente e sua posição através do médoto {@code positionQueue()}.</li>
      *     <li>Mescla os resultados com os dados emitidos pelo {@code serviceQueueResponseSinks}, com um atraso de 5 segundos entre os elementos.</li>
      * </ul>
      *
+     * @param status Status da fila a ser filtrado.
      * @return Um {@link Flux} contendo os {@link ServiceQueueResponse} com as informações dos registros da fila de serviço.
      * Os dados são emitidos com um atraso de 5 segundos entre os elementos, e também inclui as emissões do {@code serviceQueueResponseSinks}.
      */
@@ -78,11 +93,10 @@ public class ServiceQueueFacade {
      * Cria uma nova entrada na fila de serviço com base nos dados fornecidos na requisição.
      *
      * <p>Este método converte a requisição {@link ServiceQueueRequest} em uma entidade {@link ServiceQueue},
-     * a salva no banco de dados e, em seguida, recupera informações adicionais do cliente e da pessoa
-     * associada ao atendimento. O resultado final é convertido em um {@link ServiceQueueResponse}.</p>
+     * a salva no banco de dados e, em seguida, recupera informações adicionais do cliente e a sua posição ao atendimento através do métod {@code positionQueue()}.
+     * O resultado final é convertido em um {@link ServiceQueueResponse}.</p>
      *
-     * <p>Além disso, ao concluir com sucesso a criação da entrada na fila de serviço,
-     * o resultado é emitido para {@code serviceQueueResponseSinks}.</p>
+     * <p>Além disso, ao concluir com sucesso a criação da entrada na fila de serviço, o resultado é emitido para {@code serviceQueueResponseSinks}.</p>
      *
      * @param request O objeto {@link ServiceQueueRequest} contendo os dados para criação da fila de serviço.
      * @return Um {@link Mono} contendo a resposta {@link ServiceQueueResponse} com os dados completos do serviço criado.
@@ -132,6 +146,13 @@ public class ServiceQueueFacade {
 
     }
 
+
+    /**
+     * Inicia o atendimento do próximo cliente na fila.
+     *
+     * @param request Objeto contendo os dados do atendente que assumirá o atendimento.
+     * @return Um {@link Mono} contendo a resposta {@link ServiceQueueResponse} com os dados completos do serviço criado.
+     */
     public Mono<ServiceQueueResponse> serveNextQueue(ServeNextQueueRequest request) {
         log.info("Iniciando atendimento ao proximo da fila.");
         var result = this.serviceQueueService.findFirstByStatusOrderByCreationDateAsc(StatusQueueEnum.AGUARDANDO_ATENDIMENTO.getStatus())
