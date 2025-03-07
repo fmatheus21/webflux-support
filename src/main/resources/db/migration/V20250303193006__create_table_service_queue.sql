@@ -2,10 +2,10 @@ CREATE TABLE IF NOT EXISTS public.service_queue(
     id uuid NOT NULL DEFAULT gen_random_uuid(),
     id_attendant uuid,
     id_customer uuid NOT NULL,
-    status character(30) COLLATE pg_catalog."default" NOT NULL,
+    status character(30) NOT NULL,
     creation_date TIMESTAMP NOT NULL DEFAULT now(),
-    title character(70) COLLATE pg_catalog."default" NOT NULL,
-    problem_description text COLLATE pg_catalog."default" NOT NULL,
+    title character(70) NOT NULL,
+    problem_description text NOT NULL,
     CONSTRAINT pk_service_queue PRIMARY KEY (id),
     CONSTRAINT fk_attendant_service FOREIGN KEY (id_attendant)
         REFERENCES public.attendant (id) MATCH SIMPLE

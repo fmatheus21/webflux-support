@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS public.person(
+CREATE TABLE IF NOT EXISTS person(
     id integer NOT NULL,
     name character(100) NOT NULL,
     document character(15) NOT NULL,
@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS public.person(
     CONSTRAINT unique_document UNIQUE (document)
 );
 
-INSERT INTO public.person(id, name, document) VALUES
+INSERT INTO person(id, name, document) VALUES
 (1, 'Gabriel Moreira Cardoso', '35860848030'),
 (2, 'Maria Elana Gomes', '85041530025'),
 (3, 'Pietra Aparecida Sophia Pires', '11458493776'),

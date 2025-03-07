@@ -1,0 +1,31 @@
+spring:
+  r2dbc:
+    url: r2dbc:h2:mem:///webflux-support;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    pool:
+      enabled: true
+      minIdle: 1
+      maxIdleTime: 30m
+      maxAcquireTime: 50s   # Tempo máximo para adquirir uma nova conexão
+      maxLifeTime: 1h       # Tempo máximo de vida de uma conexão
+      maxSize: 10           # Define o número máximo de conexões no pool.
+      initialSize: 10       # Define o número inicial de conexões no pool.
+  flyway:
+    clean-disabled: false
+    enabled: true
+    baseline-on-migrate: true
+    url: jdbc:h2:mem:webflux-support;DB_CLOSE_DELAY=-1
+    user: sa
+    password:
+    locations:
+      - classpath:db/migration-h2
+logging:
+  level:
+    io:
+      r2dbc:
+        spi: TRACE
+    org:
+      flywaydb: TRACE
+      springframework:
+        r2dbc: TRACE
